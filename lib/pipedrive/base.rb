@@ -49,8 +49,8 @@ module Pipedrive
     #
     # @param [Hash] opts
     # @return [Boolean]
-    def update(opts = {})
-      res = put "#{resource_path}/#{id}", :body => opts
+    def update(opts = {}, api_token = nil)
+      res = put "#{resource_path}/#{id}", :body => opts, :query => { :api_token => api_token }
       if res.success?
         res['data'] = Hash[res['data'].map {|k, v| [k.to_sym, v] }]
         @table.merge!(res['data'])
@@ -65,9 +65,12 @@ module Pipedrive
       # @param [String] email cl.ly email
       # @param [String] password cl.ly password
       # @return [Hash] authentication credentials
-      def authenticate(token)
-        default_params :api_token => token
-      end
+      #
+      # Note: Saving in a class variable won't support multiple accounts.
+      #       Disabling this method to try to escape accidental errors.
+      #def authenticate(token)
+      #  default_params :api_token => token
+      #end
 
       # Examines a bad response and raises an appropriate exception
       #
@@ -84,13 +87,13 @@ module Pipedrive
         attrs['data'].is_a?(Array) ? attrs['data'].map {|data| self.new( 'data' => data ) } : []
       end
 
-      def all(response = nil, options={},get_absolutely_all=false)
-        res = response || get(resource_path, options)
+      def all(response = nil, options={}, get_absolutely_all=false, api_token = nil)
+        res = response || get(resource_path, options.merge({:query => { :api_token => api_token }}))
         if res.ok?
           data = res['data'].nil? ? [] : res['data'].map{|obj| new(obj)}
           if get_absolutely_all && res['additional_data']['pagination'] && res['additional_data']['pagination'] && res['additional_data']['pagination']['more_items_in_collection']
             options[:query] = options[:query].merge({:start => res['additional_data']['pagination']['next_start']})
-            data += self.all(nil,options,true)
+            data += self.all(nil,options,true,api_token)
           end
           data
         else
@@ -98,8 +101,8 @@ module Pipedrive
         end
       end
 
-      def create( opts = {} )
-        res = post resource_path, :body => opts
+      def create(opts = {}, api_token = nil)
+        res = post resource_path, :body => opts, :query => { api_token: api_token }
         if res.success?
           res['data'] = opts.merge res['data']
           new(res)
@@ -108,13 +111,13 @@ module Pipedrive
         end
       end
       
-      def find(id)
-        res = get "#{resource_path}/#{id}"
+      def find(id, api_token = nil)
+        res = get "#{resource_path}/#{id}", :query => { :api_token => api_token }
         res.ok? ? new(res) : bad_response(res,id)
       end
 
-      def find_by_name(name, opts={})
-        res = get "#{resource_path}/find", :query => { :term => name }.merge(opts)
+      def find_by_name(name, opts={}, api_token = nil)
+        res = get "#{resource_path}/find", :query => { :term => name, :api_token => api_token }.merge(opts)
         res.ok? ? new_list(res) : bad_response(res,{:name => name}.merge(opts))
       end
 
