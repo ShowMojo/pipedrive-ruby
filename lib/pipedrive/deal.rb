@@ -1,8 +1,7 @@
 module Pipedrive
   class Deal < Base
-
     def add_product(opts = {}, api_token = nil)
-      res = post "#{resource_path}/#{id}/products", :body => opts, :query => { :api_token => api_token }
+      res = post "#{resource_path}/#{id}/products", :body => opts.to_json, :query => { :api_token => api_token }
       res.success? ? res['data']['product_attachment_id'] : bad_response(res,opts)
     end
 
@@ -26,6 +25,5 @@ module Pipedrive
     def notes(opts = {:sort_by => 'add_time', :sort_mode => 'desc'}, api_token = nil)
       Note.all( get("/notes", :query => opts.merge(:deal_id => id, :api_token => api_token) ), {}, false, api_token )
     end
-    
   end
 end

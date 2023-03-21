@@ -8,7 +8,7 @@ module Pipedrive
   HEADERS = {
     "User-Agent"    => "Ruby.Pipedrive.Api",
     "Accept"        => "application/json",
-    "Content-Type"  => "application/x-www-form-urlencoded"
+    "Content-Type"  => "application/json"
   }
 
   # Base class for setting HTTParty configurations globally
@@ -50,7 +50,7 @@ module Pipedrive
     # @param [Hash] opts
     # @return [Boolean]
     def update(opts = {}, api_token = nil)
-      res = put "#{resource_path}/#{id}", :body => opts, :query => { :api_token => api_token }
+      res = put "#{resource_path}/#{id}", :body => opts.to_json, :query => { :api_token => api_token }
       if res.success?
         res['data'] = Hash[res['data'].map {|k, v| [k.to_sym, v] }]
         @table.merge!(res['data'])
@@ -102,7 +102,7 @@ module Pipedrive
       end
 
       def create(opts = {}, api_token = nil)
-        res = post resource_path, :body => opts, :query => { api_token: api_token }
+        res = post resource_path, :body => opts.to_json, :query => { api_token: api_token }
         if res.success?
           res['data'] = opts.merge res['data']
           new(res)
